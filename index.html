@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro HTML Hoster</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
+    <style>
+        :root {
+            --primary-color: #6a11cb;
+            --secondary-color: #2575fc;
+            --bg-main: #f4f7fc;
+            --bg-content: #ffffff;
+            --text-dark: #333;
+            --text-light: #777;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --edit-color: #007bff;
+            --delete-color: #dc3545;
+        }
+        
+        [data-theme="dark"] {
+            --primary-color: #7b2cbf;
+            --secondary-color: #3a86ff;
+            --bg-main: #121212;
+            --bg-content: #1e1e1e;
+            --text-dark: #e0e0e0;
+            --text-light: #a0a0a0;
+            --border-color: #333;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Poppins', sans-serif; background-color: var(--bg-main); color: var(--text-dark); overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
+        #app-wrapper { display: block; }
+        #auth-container { display: none; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .auth-box { background: var(--bg-content); padding: 40px; border-radius: 12px; box-shadow: var(--shadow); width: 100%; max-width: 420px; text-align: center; border: 1px solid var(--border-color); }
+        .auth-box h2 { margin-bottom: 25px; color: var(--primary-color); }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.9rem; color: var(--text-light); }
+        .form-group input, .form-group select { width: 100%; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; background-color: var(--bg-main); color: var(--text-dark); }
+        .btn { display: inline-block; padding: 12px 25px; border: none; border-radius: 8px; background-image: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s; width: 100%; text-align: center; text-decoration: none; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-secondary { background-image: none; background-color: var(--text-light); }
+        .toggle-auth { margin-top: 20px; color: var(--secondary-color); cursor: pointer; font-weight: 500; }
+        #app-container { display: none; height: 100vh; overflow: hidden; }
+        .main-layout { display: flex; height: 100%; position: relative; }
+        .sidebar { width: 240px; background: var(--bg-content); padding: 20px; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); position: fixed; top: 0; left: 0; height: 100%; z-index: 1100; transform: translateX(-100%); transition: transform 0.3s ease-in-out; }
+        .sidebar.show { transform: translateX(0); }
+        .sidebar .logo { font-size: 1.5rem; font-weight: 700; color: var(--primary-color); margin-bottom: 30px; text-align: center; }
+        .sidebar-menu a { display: flex; align-items: center; padding: 15px; margin-bottom: 10px; color: var(--text-light); text-decoration: none; border-radius: 8px; font-weight: 500; }
+        .sidebar-menu a.active, .sidebar-menu a:hover { background-color: var(--bg-main); color: var(--primary-color); }
+        .sidebar-menu i { margin-right: 15px; width: 20px; }
+        .user-profile { margin-top: auto; text-align: center; border-top: 1px solid var(--border-color); padding-top: 20px; }
+        #user-email-display { font-size: 0.9rem; word-break: break-all; margin-bottom: 10px; }
+        .theme-toggle { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; cursor: pointer; padding: 8px; background-color: var(--bg-main); border-radius: 8px; }
+        .theme-toggle span { margin: 0 10px; font-weight: 500; }
+        #logout-btn { background: var(--error-color); }
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; width: 100%; transition: margin-left 0.3s ease-in-out; }
+        .mobile-header { display: none; padding: 15px; background: var(--bg-content); border-bottom: 1px solid var(--border-color); align-items: center; justify-content: space-between; position: sticky; top:0; z-index: 1000; }
+        #menu-toggle { font-size: 1.5rem; color: var(--text-dark); background: none; border: none; cursor: pointer; }
+        .mobile-header .logo { font-size: 1.2rem; font-weight: 600; color: var(--primary-color); margin-left: 15px; }
+        .page { padding: 30px; }
+        #page-content > div { display: none; }
+        #page-content > div.active { display: block; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+        .btn-primary { background-image: linear-gradient(45deg, var(--primary-color), var(--secondary-color)); padding: 10px 20px; font-size: 0.9rem; width: auto; }
+        #dashboard-controls { display: flex; margin-bottom: 25px; gap: 20px; }
+        #search-sites { flex-grow: 1; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; background-color: var(--bg-content); color: var(--text-dark); }
+        .sites-grid { display: grid; grid-template-columns: 1fr; gap: 25px; }
+        .site-card { background: var(--bg-content); border-radius: 12px; box-shadow: var(--shadow); padding: 20px; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; border: 1px solid var(--border-color); }
+        .site-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08); }
+        .site-card-header { display: flex; align-items: center; margin-bottom: 15px; }
+        .site-card-icon { width: 40px; height: 40px; margin-right: 15px; border-radius: 8px; object-fit: cover; background-color: var(--bg-main); }
+        .site-card h3 { font-size: 1.2rem; word-break: break-all; margin: 0; }
+        .site-card-info { font-size: 0.8rem; color: var(--text-light); margin-bottom: 15px; }
+        .site-card-info span { display: block; }
+        .site-link-box { margin-bottom: 15px; display: flex; align-items: center; }
+        .site-link-box input { flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 5px 0 0 5px; background: var(--bg-main); font-size: 0.8rem; color: var(--text-dark); }
+        .site-link-box button { padding: 8px 12px; border: 1px solid var(--border-color); border-left: none; border-radius: 0 5px 5px 0; cursor: pointer; background: var(--bg-main); color: var(--text-dark); }
+        .site-actions { margin-top: auto; display: flex; gap: 10px; flex-wrap: wrap; }
+        .site-actions .btn { width: auto; font-size: 0.9rem; padding: 8px 15px; flex-grow: 1; background-image: none; }
+        .btn-view { background: var(--success-color); } .btn-edit { background: var(--edit-color); } .btn-delete { background: var(--delete-color); }
+        #editor-page .CodeMirror { height: 60vh; border: 1px solid var(--border-color); border-radius: 8px; }
+        #editor-actions { margin-top: 20px; display: flex; gap: 15px; flex-wrap: wrap; }
+        #viewer-container { display: none; width: 100%; height: 100vh; position: fixed; top: 0; left: 0; z-index: 9999; background-color: #fff; }
+        #site-message { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.5rem; text-align: center; padding: 20px; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1050; }
+        .modal { display: none; position: fixed; z-index: 1060; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        .modal-content { background: var(--bg-content); padding: 30px; border-radius: 12px; width: 90vw; max-width: 450px; border: 1px solid var(--border-color); }
+        .toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); padding: 15px 25px; border-radius: 8px; color: white; font-weight: 500; z-index: 2000; opacity: 0; transition: all 0.4s; }
+        .toast.show { opacity: 1; bottom: 20px; }
+        .toast.success { background: var(--success-color); } .toast.error { background: var(--error-color); }
+        @media (min-width: 992px) {
+            .sidebar { transform: translateX(0); }
+            .main-content { margin-left: 240px; }
+            .sites-grid { grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); }
+        }
+        @media (max-width: 991.98px) {
+            .mobile-header { display: flex; }
+            .page { padding: 20px; }
+        }
+    </style>
+    <link rel="me" href="https://www.blogger.com/profile/08480386135078154531" />
+    <meta name='google-adsense-platform-account' content='ca-host-pub-1556223355139109'/>
+    <meta name='google-adsense-platform-domain' content='blogspot.com'/>
+</head>
+<body>
+    <div id="app-wrapper">
+        <div id="auth-container">
+            <div class="auth-box">
+                <div id="login-form">
+                    <h2>Login</h2>
+                    <div class="form-group"><input id="login-email" placeholder="Email" type="email"></div>
+                    <div class="form-group"><input id="login-password" placeholder="Password" type="password"></div>
+                    <button class="btn" onclick="handleLogin()">Login</button>
+                    <p class="toggle-auth" onclick="toggleAuthForms()">Create a new account</p>
+                </div>
+                <div id="signup-form" style="display:none">
+                    <h2>Create Account</h2>
+                    <div class="form-group"><input id="signup-email" placeholder="Email" type="email"></div>
+                    <div class="form-group"><input id="signup-password" placeholder="Password" type="password"></div>
+                    <button class="btn" onclick="handleSignup()">Signup</button>
+                    <p class="toggle-auth" onclick="toggleAuthForms()">Already have an account? Login</p>
+                </div>
+            </div>
+        </div>
+        <div id="app-container">
+            <div class="main-layout">
+                <div id="modal-overlay" class="modal-overlay" onclick="closeAllPopups()"></div>
+                <nav class="sidebar" id="sidebar">
+                    <div class="logo">ProHoster</div>
+                    <div class="sidebar-menu">
+                        <a class="active" href="#" onclick="showPage('dashboard-page')"><i class="fa-solid fa-table-columns"></i> Dashboard</a>
+                    </div>
+                    <div class="user-profile">
+                        <div class="theme-toggle" onclick="toggleTheme()">
+                            <i class="fa-solid fa-sun"></i>
+                            <span id="theme-name">Light</span>
+                            <i class="fa-solid fa-moon"></i>
+                        </div>
+                        <p id="user-email-display"></p>
+                        <button class="btn" id="logout-btn" onclick="handleLogout()">Logout</button>
+                    </div>
+                </nav>
+                <main class="main-content">
+                    <header class="mobile-header">
+                        <button id="menu-toggle" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></button>
+                        <div class="logo">ProHoster</div>
+                    </header>
+                    <div id="page-content">
+                        <div class="page active" id="dashboard-page">
+                            <div class="page-header">
+                                <h1>My Sites</h1>
+                                <button class="btn btn-primary" onclick="openCreateSiteModal()"><i class="fa-solid fa-plus"></i> Create New Site</button>
+                            </div>
+                            <div id="dashboard-controls">
+                                <input type="search" id="search-sites" placeholder="Search your sites by name...">
+                            </div>
+                            <div class="sites-grid" id="sites-grid"><p>Loading your sites...</p></div>
+                        </div>
+                        <div class="page" id="editor-page">
+                            <h1 id="editor-title" style="margin-bottom:20px">Site Editor</h1>
+                            <div class="form-group" style="margin-bottom:15px">
+                                <label for="site-icon-url">Favicon Image URL (Optional)</label>
+                                <input id="site-icon-url" placeholder="https://example.com/icon.png" type="url">
+                            </div>
+                            <textarea id="html-editor"></textarea>
+                            <div id="editor-actions">
+                                <button class="btn btn-primary" onclick="saveSite()"><i class="fa-solid fa-save"></i> Save & Publish</button>
+                                <button class="btn btn-secondary" onclick="showPage('dashboard-page')">Back to Dashboard</button>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+        <div id="viewer-container"></div>
+        <div id="create-site-modal" class="modal">
+            <div class="modal-content">
+                <h2>Create New Site</h2>
+                <p style="color:var(--text-light);margin-top:5px;margin-bottom:20px">Choose a short, unique name for your site.</p>
+                <div class="form-group">
+                    <label for="new-site-name">Site Name (only lowercase letters, numbers, dash)</label>
+                    <input id="new-site-name" placeholder="e.g., my-portfolio" type="text">
+                </div>
+                <div class="form-group">
+                    <label for="new-site-template">Choose a Template</label>
+                    <select id="new-site-template">
+                        <option value="blank">Blank Page</option>
+                        <option value="portfolio">Simple Portfolio</option>
+                        <option value="links">Link-in-Bio</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="new-site-icon">Favicon Image URL (Optional)</label>
+                    <input id="new-site-icon" placeholder="https://example.com/icon.png" type="url">
+                </div>
+                <button class="btn" onclick="handleCreateSite()">Create Site</button>
+                <button class="btn btn-secondary" onclick="closeCreateSiteModal()" style="margin-top:10px">Cancel</button>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast-notification"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+
+    <script>
+        // --- TEMPLATES ---
+        const siteTemplates = {
+            blank: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My New Site</title>
+</head>
+<body>
+    <h1>Welcome to My New Site!</h1>
+    <p>You can edit this code in the dashboard.</p>
+</body>
+</html>`,
+            portfolio: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Portfolio</title>
+    <style>body{font-family:sans-serif;margin:40px;text-align:center;}.project{margin:20px 0;}</style>
+</head>
+<body>
+    <img src="https://via.placeholder.com/150" alt="Profile Picture" style="border-radius:50%;">
+    <h1>John Doe</h1>
+    <p>Web Developer | Designer</p>
+    <div class="project"><h2>Project 1</h2><p>Description of my first project.</p></div>
+    <div class="project"><h2>Project 2</h2><p>Description of my second project.</p></div>
+</body>
+</html>`,
+            links: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Links</title>
+    <style>body{font-family:sans-serif;background:#f0f0f0;display:flex;justify-content:center;padding-top:50px;} .container{width:90%;max-width:400px;text-align:center;} a{display:block;background:white;color:black;padding:15px;margin:10px 0;text-decoration:none;border-radius:8px;font-weight:bold;}</style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://via.placeholder.com/100" alt="Avatar" style="border-radius:50%;">
+        <h3>@yourusername</h3>
+        <a href="#">Link 1: My Website</a>
+        <a href="#">Link 2: My Social Media</a>
+        <a href="#">Link 3: Another Cool Link</a>
+    </div>
+</body>
+</html>`
+        };
+        
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDK5_blHE_dw63DhFBNAKmcRNepFxnYq5E",
+            authDomain: "instagram-f0352.firebaseapp.com",
+            projectId: "instagram-f0352",
+            databaseURL: "https://instagram-f0352-default-rtdb.firebaseio.com",
+            storageBucket: "instagram-f0352.appspot.com",
+            messagingSenderId: "961783441132",
+            appId: "1:961783441132:web:7cfc0dff1f22efa75ee7c9",
+            measurementId: "G-YS3TPDZWGW"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        // --- GLOBAL VARIABLES & DOM ELEMENTS ---
+        let currentEditingSiteId = null;
+        let codeEditor;
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const viewerContainer = document.getElementById('viewer-container');
+        const pageContent = document.getElementById('page-content');
+        const sidebar = document.getElementById('sidebar');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const createSiteModal = document.getElementById('create-site-modal');
+        const searchInput = document.getElementById('search-sites');
+        
+        // --- CORE APPLICATION LOGIC ---
+        
+        function main() {
+            // Apply saved theme on load
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeUI(savedTheme);
+
+            const path = window.location.pathname;
+            const params = new URLSearchParams(window.location.search);
+            const uid = params.get('uid');
+            const pathParts = path.split('/').filter(p => p);
+
+            // Viewer mode logic for Blogger integration
+            if (pathParts[0] === 'search' && pathParts[1] === 'label' && pathParts.length >= 3 && uid) {
+                const bloggerPostContent = document.querySelector('.post-body, .post-content, .post');
+                if (bloggerPostContent) { bloggerPostContent.style.display = 'none'; }
+                showView('viewer');
+                const siteId = pathParts[2];
+                loadSiteForViewing(uid, siteId);
+            } else {
+                // Standard app logic
+                auth.onAuthStateChanged(user => {
+                    if (user) {
+                        showView('app');
+                        document.getElementById('user-email-display').textContent = user.email;
+                        loadUserSites(user.uid);
+                        showPage('dashboard-page');
+                        initializeEditor(); // Initialize editor once after login
+                    } else {
+                        showView('auth');
+                    }
+                });
+            }
+        }
+        
+        // --- VIEW & PAGE MANAGEMENT ---
+
+        function showView(viewName) {
+            authContainer.style.display = 'none';
+            appContainer.style.display = 'none';
+            viewerContainer.style.display = 'none';
+            if (viewName === 'auth') authContainer.style.display = 'flex';
+            else if (viewName === 'app') appContainer.style.display = 'block';
+            else if (viewName === 'viewer') viewerContainer.style.display = 'block';
+        }
+        
+        function showPage(pageId) {
+            Array.from(pageContent.children).forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId)?.classList.add('active');
+            document.querySelectorAll('.sidebar-menu a').forEach(a => a.classList.remove('active'));
+            document.querySelector(`.sidebar-menu a[onclick*="'${pageId}'"]`)?.classList.add('active');
+            if (sidebar.classList.contains('show')) { toggleMenu(); }
+        }
+
+        // --- AUTHENTICATION ---
+
+        function handleSignup() { 
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value; 
+            auth.createUserWithEmailAndPassword(email, password)
+              .then(cred => { 
+                  db.ref('users/' + cred.user.uid).set({ email: cred.user.email, createdAt: Date.now() }); 
+                  showToast('Account created successfully!', 'success');
+              })
+              .catch(error => showToast(error.message, 'error'));
+        }
+
+        function handleLogin() { 
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            auth.signInWithEmailAndPassword(email, password)
+                .catch(error => showToast(error.message, 'error')); 
+        }
+
+        function handleLogout() { 
+            auth.signOut().then(() => { 
+                window.location.href = window.location.pathname.split('/search/')[0] || '/';
+            });
+        }
+        
+        function toggleAuthForms() {
+            const loginForm = document.getElementById('login-form'); 
+            const signupForm = document.getElementById('signup-form');
+            loginForm.style.display = loginForm.style.display === 'none' ? 'block' : 'none';
+            signupForm.style.display = signupForm.style.display === 'none' ? 'block' : 'none'; 
+        }
+        
+        // --- SITE MANAGEMENT ---
+        
+        function loadUserSites(uid) {
+            const sitesGrid = document.getElementById('sites-grid');
+            const sitesRef = db.ref(`sites/${uid}`);
+
+            sitesRef.on('value', snapshot => {
+                sitesGrid.innerHTML = '';
+                if (!snapshot.exists()) {
+                    sitesGrid.innerHTML = '<p>You have not created any sites yet.</p>'; return;
+                }
+                snapshot.forEach(childSnapshot => {
+                    const siteId = childSnapshot.key;
+                    const siteData = childSnapshot.val();
+                    const siteUrl = `${window.location.origin}/search/label/${siteId}?uid=${uid}`;
+                    const iconUrl = siteData.iconUrl || 'https://i.ibb.co/6PDeT7s/default-icon.png';
+                    const createdAt = new Date(siteData.createdAt).toLocaleDateString();
+                    const updatedAt = siteData.updatedAt ? new Date(siteData.updatedAt).toLocaleDateString() : 'N/A';
+                    
+                    const siteCard = document.createElement('div');
+                    siteCard.className = 'site-card';
+                    siteCard.innerHTML = `
+                        <div class="site-card-header">
+                            <img src="${iconUrl}" alt="icon" class="site-card-icon" onerror="this.src='https://i.ibb.co/6PDeT7s/default-icon.png'">
+                            <h3 data-sitename="${siteData.name || siteId}">${siteData.name || siteId}</h3>
+                        </div>
+                        <div class="site-card-info">
+                            <span><strong>Created:</strong> ${createdAt}</span>
+                            <span><strong>Updated:</strong> ${updatedAt}</span>
+                        </div>
+                        <div class="site-link-box">
+                            <input type="text" value="${siteUrl}" readonly>
+                            <button onclick="copyToClipboard('${siteUrl}')" title="Copy URL"><i class="fa-solid fa-copy"></i></button>
+                        </div>
+                        <div class="site-actions">
+                            <a href="${siteUrl}" target="_blank" class="btn btn-view"><i class="fa-solid fa-eye"></i> View</a>
+                            <button class="btn btn-edit" onclick="openEditor('${uid}', '${siteId}')"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                            <button class="btn btn-delete" onclick="deleteSite('${uid}', '${siteId}', '${siteData.name || siteId}')"><i class="fa-solid fa-trash"></i> Delete</button>
+                        </div>`;
+                    sitesGrid.appendChild(siteCard);
+                });
+            });
+        }
+        
+        function handleCreateSite() {
+            const siteNameInput = document.getElementById('new-site-name');
+            const siteIconInput = document.getElementById('new-site-icon');
+            const templateSelect = document.getElementById('new-site-template');
+            
+            const siteName = siteNameInput.value.trim();
+            const iconUrl = siteIconInput.value.trim();
+            const selectedTemplate = templateSelect.value;
+            const siteId = siteName.toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+            if (!siteId) { showToast("Invalid site name.", "error"); return; }
+            const user = auth.currentUser;
+            if (!user) return;
+            
+            const siteRef = db.ref(`sites/${user.uid}/${siteId}`);
+            siteRef.once('value', snapshot => {
+                if (snapshot.exists()) {
+                    showToast('A site with this name already exists.', 'error');
+                } else {
+                    const initialCode = siteTemplates[selectedTemplate] || siteTemplates.blank;
+                    const newSiteData = {
+                        name: siteName,
+                        iconUrl: iconUrl,
+                        createdAt: Date.now(),
+                        htmlCode: initialCode.replace(/My New Site|My Portfolio|My Links/g, siteName)
+                    };
+                    siteRef.set(newSiteData).then(() => {
+                        showToast("Site created successfully!", "success");
+                        closeCreateSiteModal();
+                        siteNameInput.value = '';
+                        siteIconInput.value = '';
+                    }).catch(e => showToast(e.message, 'error'));
+                }
+            });
+        }
+
+        function openEditor(uid, siteId) {
+            currentEditingSiteId = siteId;
+            showPage('editor-page');
+            document.getElementById('editor-title').textContent = `Editing: ${siteId}`;
+            const iconUrlInput = document.getElementById('site-icon-url');
+            iconUrlInput.value = '';
+            codeEditor.setValue('Loading code...');
+            
+            db.ref(`sites/${uid}/${siteId}`).once('value', snapshot => {
+                const siteData = snapshot.val();
+                if (siteData) {
+                    codeEditor.setValue(siteData.htmlCode || '');
+                    iconUrlInput.value = siteData.iconUrl || '';
+                    setTimeout(() => codeEditor.refresh(), 1); // Refresh editor view
+                }
+            });
+        }
+
+        function saveSite() {
+            if (!currentEditingSiteId) return;
+            const user = auth.currentUser;
+            if (user) {
+                const iconUrl = document.getElementById('site-icon-url').value.trim();
+                const updates = { 
+                    htmlCode: codeEditor.getValue(), 
+                    iconUrl: iconUrl,
+                    updatedAt: Date.now()
+                };
+                db.ref(`sites/${user.uid}/${currentEditingSiteId}`).update(updates)
+                    .then(() => { 
+                        showToast('Site saved successfully!', 'success'); 
+                        showPage('dashboard-page'); 
+                    })
+                    .catch(e => showToast('Error: ' + e.message, 'error'));
+            }
+        }
+        
+        function deleteSite(uid, siteId, siteName) {
+            if (confirm(`Are you sure you want to delete the site "${siteName}"? This action cannot be undone.`)) {
+                db.ref(`sites/${uid}/${siteId}`).remove()
+                    .then(() => showToast("Site deleted successfully!", "success"))
+                    .catch(e => showToast("Error: " + e.message, "error"));
+            }
+        }
+        
+        function loadSiteForViewing(uid, siteId) {
+            db.ref(`sites/${uid}/${siteId}`).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    const siteData = snapshot.val();
+                    if (siteData.iconUrl) {
+                        let link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+                        link.rel = 'shortcut icon';
+                        link.href = siteData.iconUrl;
+                        document.head.appendChild(link);
+                    }
+                    
+                    let htmlContent = siteData.htmlCode || '<h1>Content not found.</h1>';
+                    const titleMatch = htmlContent.match(/<title>(.*?)<\/title>/i);
+                    document.title = titleMatch ? titleMatch[1] : (siteData.name || "Hosted Site");
+
+                    const iframe = document.createElement('iframe');
+                    iframe.id = 'viewer-iframe';
+                    iframe.srcdoc = htmlContent;
+                    iframe.sandbox = "allow-scripts allow-same-origin";
+                    viewerContainer.innerHTML = '';
+                    viewerContainer.appendChild(iframe);
+                } else {
+                    document.title = "404 Not Found";
+                    viewerContainer.innerHTML = '<div id="site-message">404 - Site Not Found</div>';
+                }
+            });
+        }
+
+        // --- UI & UTILITY FUNCTIONS ---
+        
+        function toggleMenu() {
+            sidebar.classList.toggle('show');
+            modalOverlay.style.display = sidebar.classList.contains('show') ? 'block' : 'none';
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeUI(newTheme);
+        }
+
+        function updateThemeUI(theme) {
+            document.getElementById('theme-name').textContent = theme === 'dark' ? 'Dark' : 'Light';
+        }
+
+        function initializeEditor() {
+            if (!codeEditor) {
+                codeEditor = CodeMirror.fromTextArea(document.getElementById('html-editor'), {
+                    mode: 'htmlmixed',
+                    theme: 'material-darker',
+                    lineNumbers: true,
+                    autoCloseTags: true,
+                    lineWrapping: true,
+                });
+            }
+        }
+        
+        function openCreateSiteModal() { createSiteModal.style.display = 'block'; modalOverlay.style.display = 'block'; }
+        function closeCreateSiteModal() { createSiteModal.style.display = 'none'; closeAllPopups(); }
+        function closeAllPopups() {
+            if (!sidebar.classList.contains('show')) modalOverlay.style.display = 'none';
+            createSiteModal.style.display = 'none';
+        }
+        
+        function copyToClipboard(text) { navigator.clipboard.writeText(text).then(() => showToast('Link copied!', 'success'), () => showToast('Failed to copy link.', 'error')); }
+        
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast-notification');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000);
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const siteCards = document.querySelectorAll('.site-card');
+            siteCards.forEach(card => {
+                const siteName = card.querySelector('h3').dataset.sitename.toLowerCase();
+                if (siteName.includes(searchTerm)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+        
+        // --- START THE APP ---
+        document.addEventListener('DOMContentLoaded', main);
+    </script>
+</body>
+</html>
